@@ -1,0 +1,48 @@
+/*
+Find the biggest quarterly sale for given year. If the sale os bigger
+than 2500 the tax will be 15%, else 12%.
+Show that period,sale and tax. Return the profit.
+*/
+SET SERVEROUTPUT ON:
+create or replace FUNCTION TAX(V_YEAR INTEGER) RETURN Number
+IS
+f_date DATE := TO_DATE(v_year||'/01/01','yyyy/mm/dd');
+b_f_date Date;
+l_date DATE := f_date+91;
+
+b_l_date Date;
+v_sum Number:=0;
+
+copy_sum Number;
+v_tax Number;
+BEGIN
+
+    loop
+    EXIT WHEN EXTRACT(YEAR FROM f_date)>V_YEAR;
+         copy_sum := v_sum;
+         SELECT nvl(sum(NumberOfItems*Price ),0) into v_sum FROM(
+             SELECT PI.NumberOfItems, PI.Product_Id 
+             FROM PURCHASE P
+             INNER JOIN PURCHASEITEM PI ON P.ID=PI.PURCHASE_ID
+             WHERE DATA BETWEEN f_date and l_date) 
+         Inner join ProductList PL on PL.Id=Product_Id;
+                  
+         If v_sum < copy_sum Then
+            v_sum := copy_sum;
+            b_f_date := f_date;
+            b_l_date := l_date;
+         End If;            
+       
+        f_date := l_date+1;
+        l_date := f_date+90;
+    end loop;
+    
+    If v_sum > 2500 Then        
+        v_tax := v_sum*0.15;
+    Else
+        v_tax := v_sum*0.12;
+    End If;
+    
+    DBMS_OUTPUT.PUT_LINE('For '||b_f_date||':'||b_l_date||' period the sale is '||v_sum||' the tax is '||v_tax); 
+    Return(v_sum-v_tax);
+END Tax;

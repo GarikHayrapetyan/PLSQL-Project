@@ -1,0 +1,38 @@
+/*
+For given the last amount of month find the amount of each type of seld product 
+and increase the price by 10% if amount is more than 5, else decrease by 10%.
+*/
+set SERVEROUTPUT on;
+create or replace procedure ChangePrice
+(v_month Integer)
+As
+Cursor cur Is Select ID, Price From ProductList;
+v_Id ProductList.Id%Type;
+v_price ProductList.Price%Type;
+v_count Integer;
+Begin
+    Open cur;
+    Loop
+        Fetch cur Into v_Id,v_price;
+        Exit When cur%notfound;
+             
+            Select sum(PI.NumberOfItems) Into v_count
+            From PurchaseItem PI
+            Inner join Purchase P on PI.Purchase_Id=P.Id
+            Where P.Data between Add_Months(Sysdate,-v_month)and Sysdate
+            and PI.Product_Id=v_Id;         
+            
+            DBMS_OUTPUT.PUT_LINE('Id '||v_Id||' Count '||v_count);
+
+             IF v_count > 5 Then
+                Update ProductList
+                set Price=Price+Price*0.1
+                where Id=v_Id;
+             ELSE
+               Update ProductList
+               set Price=Price-Price*0.1
+               where Id=v_Id;
+             End If;
+    End Loop;
+    Close cur;
+End;

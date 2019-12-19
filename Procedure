@@ -1,0 +1,41 @@
+/*
+Find the most purchase made customer by given period and return the customer's SSN.
+*/
+SET SERVEROUTPUT ON;
+create or replace PROCEDURE LOYAL_CUSTOMER
+(FIRST_DATE DATE,
+ LAST_DATE DATE,   
+ V_SSN OUT INTEGER 
+)
+AS
+V_CUSTOMER_ID INTEGER;
+wrong_date Exception;
+customer_not_found Exception;
+BEGIN
+     dbms_output.put_line(first_date||':'||last_date);
+    IF first_date>last_date Then
+        Raise wrong_date;
+    End If;
+    
+    SELECT CUSTOMER_ID INTO V_CUSTOMER_ID
+    FROM(
+         SELECT P.CUSTOMER_ID,COUNT(CUSTOMER_ID) AS MAX_PURCHASE
+         FROM PURCHASE P
+         INNER JOIN PURCHASEITEM PI ON P.ID=PI.PURCHASE_ID
+         WHERE P.DATA BETWEEN FIRST_DATE AND LAST_DATE
+         GROUP BY P.CUSTOMER_ID
+         )
+    WHERE ROWNUM=1
+    ORDER BY MAX_PURCHASE DESC;
+ 
+    SELECT SSN INTO V_SSN 
+    FROM CUSTOMER C
+    WHERE C.ID=V_CUSTOMER_ID;
+    
+EXCEPTION
+    When wrong_date Then
+     dbms_output.put_line('Illegal period!');
+    When no_data_found Then
+     dbms_output.put_line('ERROR'); 
+     dbms_output.put_line('there is no value for this period!'); 
+END;

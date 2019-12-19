@@ -1,0 +1,41 @@
+/*
+Create trigger on ProductList
+ - does not allow to add a product it it exists
+ - does not allow to change name of product to existed name
+ - before deleting any product add the product info in ProductHistory table.
+*/
+
+Create table ProductHistory(
+Id Integer,
+ProductName varchar(50),
+Price Money,
+RemoveDate Date
+)
+
+
+SET SERVEROUTPUT ON;
+create or replace trigger Protect_Product_List
+Before Insert or Update or Delete 
+on ProductList
+FOR EACH ROW
+Declare 
+v_ifexists Integer;
+v_repeating Exception;
+begin
+    If Inserting Then
+        Select count(1) Into v_ifexists
+        from ProductList PL
+        Where Upper(PL.ProductName)=Upper(:new.ProductName);
+    ELSIF Updating Then    
+        IF :new.ProductName = :old.ProductName and :new.Price = :old.Price Then
+           Raise v_repeating;
+        End If;       
+    ELSIF Deleting Then
+        Insert Into ProductHistory(Id,ProductName,Price,RemoveDate)
+        Values(:old.Id,:old.ProductName,:old.Price,SYSDATE);
+    End If;
+
+Exception
+    When v_repeating Then
+       dbms_output.put_line('User trying update with excisting value!');
+end;
